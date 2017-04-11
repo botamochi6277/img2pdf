@@ -2,14 +2,12 @@
 # author: botamochi6277
 # licence: MIT licence
 PROGNAME=$(basename $0)
-VERSION="0.0.1"
-HELP_MSG="'$PROGNAME -h'と指定することでヘルプを見ることができます"
-
+VERSION="1.0.0"
 
 #ref http://qiita.com/rita_cano_bika/items/9fcb2a61c6f360632541
 # ヘルプメッセージ
 usage() {
-  echo "Usage: $PROGNAME [options] directory_path"
+  echo "Usage: $PROGNAME directory_path [options]"
   echo
   echo "Options:"
   echo "  -h, --help            print this message"
@@ -19,24 +17,23 @@ usage() {
   echo
   exit 1
 }
-
 # オプション解析
 for OPT in "$@"
 do
   case "$OPT" in
-    # ヘルプメッセージ
+    # help massage
     '-h'|'--help' )
       usage
       exit 1
       ;;
-    # バージョンメッセージ
+    # print version
     '-v'|'--version' )
       echo v$VERSION
       exit 1
       ;;
-    # オプション-o、--long-o
+    # option: -o、--long-o
     '-o'|'--output' )
-      FLG_O=1
+      FLG_O=true
       # オプションに引数がなかった場合（必須）
       if [[ -z "$2" ]] || [[ "$2" =~ ^-+ ]]; then
         echo "$PROGNAME:「$1」need argument" 1>&2
@@ -45,25 +42,24 @@ do
       ARG_O="$2"
       shift 2
       ;;
-    # オプション-j、--jpeg
+    # option: -j、--jpeg
     '-j'|'--jpeg' )
       FLG_J=1
       # オプションに引数がなかった場合
       if [[ -z "$2" ]] || [[ "$2" =~ ^-+ ]]; then
         # echo ARG_J 1
+        ARG_J="-compress jpeg"
         shift
       else
         # echo ARG_J 2
         # オプションの引数設定
-        ARG_J="$2"
+        ARG_J="-quality ${2} -compress jpeg"
         shift 2
       fi
       ;;
-    # オプション-c
-    '-c'|'--long-c' )
-      # オプション指定のみなのでフラグだけ設定（引数がないタイプ）
-      # 今のところはなし，将来的に追加するかも
-      FLG_C=1
+    # option: -s
+    '-s'|'--separate' )
+      FLG_S=1
       shift 1
       ;;
     '--'|'-' )
@@ -87,25 +83,44 @@ do
   esac
 done
 
-if [ $FLG_O ]; then
-  echo Now convering images to "${ARG_O}".pdf
-  convert "${param}"/* "${ARG_O}".pdf
-  exit 1
-elif [ $FLG_J ]; then
-  #statements
-  if [ $ARG_J ]; then
-    echo $ARG_J
-    echo Now jpeg compressing at $ARG_J \% quality
-    convert "${param}"/* -quality $ARG_J -compress jpeg "${param##*/}".pdf
+
+if [ ! $FLG_O ]; then
+  if [ ! $FLG_S ]; then
+    ARG_O+="${param##*/}"
   fi
-  echo Now jpeg compressing
-  convert "${param}"/* -compress jpeg "${param##*/}".pdf
-  exit 1
-elif [ ${#param[*]} = 0 ]; then
+fi
+for i in "${param[@]}"
+do
+  ARG_I+=("${i}/*")
+  if [ $FLG_S ]; then
+    ARG_O+=("${i##*/}")
+  fi
+done
+# To Debug
+# echo Input Arguments:
+# echo "${ARG_I[@]}"
+# echo Output Names:
+# echo "${ARG_O[@]}"
+# echo "${#param[*]},${#ARG_I[@]},${#ARG_O[@]}"
+
+if [ ${#param[*]} = 0 ]; then
   #statements
   echo Error: No directory path.
   echo ${PROGNAME} '-h'
 else
-  echo Now convering images to \'"${param##*/}".pdf\'
-  convert "${param}"/* "${param##*/}".pdf
+
+  if [ $FLG_J ]; then
+    echo "Now jpeg compressing with \"${ARG_J}\" "
+
+  fi
+
+  if [ $FLG_S ]; then
+    for (( i = 0; i < "${#ARG_I[@]}"; i++ )); do
+      echo "Now convering images to "${ARG_O[i]}".pdf"
+      convert "${ARG_I[i]}" $ARG_J "${ARG_O[i]}".pdf
+    done
+  else
+    echo "Now convering images to "${ARG_O}".pdf"
+    convert "${ARG_I[@]}" $ARG_J "${ARG_O}".pdf
+  fi
 fi
