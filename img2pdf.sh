@@ -2,7 +2,7 @@
 # author: botamochi6277
 # licence: MIT licence
 PROGNAME=$(basename $0)
-VERSION="1.0.0"
+VERSION="1.1.1"
 
 #ref http://qiita.com/rita_cano_bika/items/9fcb2a61c6f360632541
 # ヘルプメッセージ
@@ -14,6 +14,8 @@ usage() {
   echo "  -v, --version         print ${PROGNAME} version"
   echo "  -o, --output <path>   convert to inputed path"
   echo "  -j, --jpeg <quality>  convert with jpeg compression"
+  echo "  -s, --separate        save images in directories as \"directory-name.pdf\""
+  echo "  -r, --remove          remove directories after convering"
   echo
   exit 1
 }
@@ -62,6 +64,10 @@ do
       FLG_S=1
       shift 1
       ;;
+    '-r'|'--remove' )
+      FLG_R=1
+      shift 1
+      ;;
     '--'|'-' )
       # 「-」か「--」だけ打った時
       shift 1
@@ -91,7 +97,7 @@ if [ ! $FLG_O ]; then
 fi
 for i in "${param[@]}"
 do
-  ARG_I+=("${i}/*")
+  ARG_I+=("${i}/*.*")
   if [ $FLG_S ]; then
     ARG_O+=("${i##*/}")
   fi
@@ -116,11 +122,16 @@ else
 
   if [ $FLG_S ]; then
     for (( i = 0; i < "${#ARG_I[@]}"; i++ )); do
-      echo "Now convering images to "${ARG_O[i]}".pdf"
+      echo "Now converting images to "${ARG_O[i]}".pdf"
       convert "${ARG_I[i]}" $ARG_J "${ARG_O[i]}".pdf
     done
   else
-    echo "Now convering images to "${ARG_O}".pdf"
+    echo "Now converting images to "${ARG_O}".pdf"
     convert "${ARG_I[@]}" $ARG_J "${ARG_O}".pdf
+  fi
+
+  if [ $FLG_R ]; then
+    echo "Now removing "
+    rm -fR "${param[@]}"
   fi
 fi
